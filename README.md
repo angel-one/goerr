@@ -73,5 +73,5 @@ func Repository() error {
 
 # Installation
 ```shell
-go install github.com/angel-one/goerr
+go get github.com/angel-one/goerr
 ```
