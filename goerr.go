@@ -184,6 +184,10 @@ func ListStacks(err error) []string {
 }
 
 func Stack(err error) string {
+	if err == nil {
+		return ""
+	}
+
 	stacks := ListStacks(err)
 	if len(stacks) == 0 {
 		return ""

@@ -2,11 +2,12 @@ package goerr_test
 
 import (
 	"errors"
-	"github.com/angel-one/goerr"
-	"github.com/angel-one/goerr/samplesrc"
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/angel-one/goerr"
+	"github.com/angel-one/goerr/samplesrc"
 )
 
 func TestBasic(t *testing.T) {
@@ -85,5 +86,14 @@ func TestStackNonGoErr(t *testing.T) {
 
 	if want != got {
 		t.Errorf("Want: %s, Got: %s", want, got)
+	}
+}
+
+func TestStackWithNil(t *testing.T) {
+	want := ""
+	got := goerr.Stack(nil)
+
+	if want != got {
+		t.Errorf("Want: %v, Got: %v", want, got)
 	}
 }
