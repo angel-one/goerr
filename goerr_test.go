@@ -2,6 +2,7 @@ package goerr_test
 
 import (
 	"errors"
+	"net/http"
 	"regexp"
 	"strings"
 	"testing"
@@ -47,7 +48,7 @@ func TestStackDetails(t *testing.T) {
 	if !strings.Contains(first, "service failed") {
 		t.Errorf("stack do not contain right error")
 	}
-	if !strings.Contains(first, "/goerr/samplesrc/samples.go:19") {
+	if !strings.Contains(first, "/goerr/samplesrc/samples.go:20") {
 		t.Errorf("stack do not contain right file/line number")
 	}
 
@@ -55,7 +56,7 @@ func TestStackDetails(t *testing.T) {
 	if !strings.Contains(second, "error from database") {
 		t.Errorf("stack do not contain right error")
 	}
-	if !strings.Contains(second, "/goerr/samplesrc/samples.go:26") {
+	if !strings.Contains(second, "/goerr/samplesrc/samples.go:27") {
 		t.Errorf("stack do not contain right file/line number")
 	}
 }
@@ -67,10 +68,11 @@ func TestStack(t *testing.T) {
 	}
 
 	stack := goerr.Stack(err)
+	t.Log(stack)
 
-	pattern := `controller failed \[.*/goerr/samplesrc/samples.go:11 \(samplesrc.Controller\)\]
-\tservice failed \[.*/goerr/samplesrc/samples.go:19 \(samplesrc.Service\)\]
-\t\terror from database.* \[.*/goerr/samplesrc/samples.go:26 \(samplesrc.Repository\)\]`
+	pattern := `controller failed \[.*/goerr/samplesrc/samples.go:12 \(samplesrc.Controller\)\]
+\tservice failed \[.*/goerr/samplesrc/samples.go:20 \(samplesrc.Service\)\]
+\t\terror from database.* \[.*/goerr/samplesrc/samples.go:27 \(samplesrc.Repository\)\]`
 	match, _ := regexp.MatchString(pattern, stack)
 
 	if !match {
@@ -97,3 +99,86 @@ func TestStackWithNil(t *testing.T) {
 		t.Errorf("Want: %v, Got: %v", want, got)
 	}
 }
+
+func TestWithHTTPCode(t *testing.T) {
+	repository := func() error {
+		return goerr.New(errors.New("db key error"), http.StatusConflict, "repository error")
+	}
+	service := func() error {
+		err := repository()
+		if err != nil {
+			return goerr.New(err, "service error")
+		}
+		return nil
+	}
+	controller := func() error {
+		err := service()
+		if err != nil {
+			return goerr.New(err, "controller error")
+		}
+		return nil
+	}
+
+	want := http.StatusConflict
+	got := goerr.Code(controller())
+
+	if want != got {
+		t.Errorf("Want: %d, Got: %d", want, got)
+	}
+}
+
+func TestWithHTTPCodeChangedInMiddle(t *testing.T) {
+	repository := func() error {
+		return goerr.New(errors.New("db key error"), http.StatusConflict, "repository error")
+	}
+	service := func() error {
+		err := repository()
+		if err != nil {
+			return goerr.New(err, http.StatusBadRequest, "service error")
+		}
+		return nil
+	}
+	controller := func() error {
+		err := service()
+		if err != nil {
+			return goerr.New(err, "controller error")
+		}
+		return nil
+	}
+
+	want := http.StatusBadRequest
+	got := goerr.Code(controller())
+
+	if want != got {
+		t.Errorf("Want: %d, Got: %d", want, got)
+	}
+}
+
+func TestWithHTTPCodeStack(t *testing.T) {
+	repository := func() error {
+		return goerr.New(errors.New("db key error"), http.StatusConflict, "repository error")
+	}
+	service := func() error {
+		err := repository()
+		if err != nil {
+			return goerr.New(err, "service error")
+		}
+		return nil
+	}
+	controller := func() error {
+		err := service()
+		if err != nil {
+			return goerr.New(err, "controller error")
+		}
+		return nil
+	}
+
+	err := controller()
+
+	got := goerr.Stack(err)
+	if !strings.Contains(got, "repository error (409)") {
+		t.Errorf("stack do not contain the error code. %s", got)
+	}
+
+}
+

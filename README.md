@@ -65,6 +65,31 @@ func Repository() error {
 	}
 ```
 
+# Return goerr with an error code
+`goerr` has ability to send an error code of int type. As part of teh stack each `goerr` returned can optionally sent the int error code. By default this code will be a `0`
+```
+func demo() error {
+	return goerr.New(err, http.StatusNotAllowed, "key conflict")
+}
+```
+
+In teh `New` method if the second parameter is an `int` value that will be taken as error code.
+
+If `goerr` has any error code that will be returned as part of the stack trace. See **(409)** in below sampel stack
+```
+controller error [goerr_test.go:171 (func3)]
+    service error [goerr_test.go:164 (func2)]
+        repository error (409) [goerr_test.go:159 (func1)]
+```
+
+## Retrieve code from error
+You can also explicitly retrieve the error explicitky from `goerr.Code(err)` method.
+```
+err := demo()
+code := goerr.Code(err)
+```
+The `Code` method iterates until it fonds the error code in teh stack. It stop in the first `goerr` that has an error code. This means you get the error code that is last given in the call chain.
+
 # Compatibility
 - `goerr` implements standard `error` interface, so can be assigned where ever error is used
 - `goerr.Error()` will give the error text of the top most error object

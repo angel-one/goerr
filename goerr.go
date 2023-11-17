@@ -16,19 +16,31 @@ type errorEx struct {
 	message string
 	stack   []uintptr
 	frames  []StackFrame
+	code    int
 }
 
 func New(nested error, message ...any) error {
 	msg := "error"
+	code := 0
 
 	if nested != nil {
 		msg = nested.Error()
 	}
 	if len(message) == 1 {
-		msg = message[0].(string)
+		if c, ok := message[0].(int); ok {
+			code = c
+		} else {
+			msg = message[0].(string)
+		}
 	}
+
 	if len(message) > 1 {
-		msg = fmt.Sprintf(message[0].(string), message[1:]...)
+		if c, ok := message[0].(int); ok {
+			code = c
+			msg = fmt.Sprintf(message[1].(string), message[2:]...)
+		} else {
+			msg = fmt.Sprintf(message[0].(string), message[1:]...)
+		}	
 	}
 
 	stack := make([]uintptr, MaxStackDepth)
@@ -45,12 +57,11 @@ func New(nested error, message ...any) error {
 		message: msg,
 		stack:   stack[:length],
 		frames:  frames,
+		code: code,
 	}
-
 }
 
 func (e *errorEx) Error() string {
-	//return fmt.Sprintf("%s (%s:%d)\n", e.message, e.frames[0].File, e.frames[0].LineNumber)
 	return e.message
 }
 
@@ -175,7 +186,11 @@ func ListStacks(err error) []string {
 	}
 	packageParts := strings.Split(e.frames[0].Func().Name(), "/")
 	funcName := packageParts[len(packageParts)-1]
-	result = append(result, fmt.Sprintf("%s [%s:%d (%s)]", e.message, e.frames[0].File, e.frames[0].LineNumber, funcName))
+	str := fmt.Sprintf("%s [%s:%d (%s)]", e.message, e.frames[0].File, e.frames[0].LineNumber, funcName)
+	if e.code != 0 {
+		str = fmt.Sprintf("%s (%d) [%s:%d (%s)]", e.message, e.code, e.frames[0].File, e.frames[0].LineNumber, funcName)
+	}
+	result = append(result, str)
 	if e.err == nil {
 		return result
 	}
@@ -205,4 +220,21 @@ func Stack(err error) string {
 		stack += line
 	}
 	return stack
+}
+
+func Code(err error) int {
+	if err == nil {
+		return 0
+	}
+
+	e, ok := err.(*errorEx)
+	if !ok {
+		return 0
+	}
+
+	if e.code != 0 {
+		return e.code
+	}
+
+	return Code(e.err)
 }

@@ -2,6 +2,7 @@ package samplesrc
 
 import (
 	"errors"
+
 	"github.com/angel-one/goerr"
 )
 
