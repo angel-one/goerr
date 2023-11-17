@@ -66,14 +66,14 @@ func Repository() error {
 ```
 
 # Return goerr with an error code
-`goerr` has ability to send an error code of int type. As part of teh stack each `goerr` returned can optionally sent the int error code. By default this code will be a `0`
+`goerr` has ability to send an error code of int type. As part of the stack each `goerr` returned can optionally sent the error code. By default this code will be a `0`
 ```
 func demo() error {
 	return goerr.New(err, http.StatusNotAllowed, "key conflict")
 }
 ```
 
-In teh `New` method if the second parameter is an `int` value that will be taken as error code.
+In the `New` method if the second parameter is an `int` value that will be taken as error code.
 
 If `goerr` has any error code that will be returned as part of the stack trace. See **(409)** in below sampel stack
 ```
@@ -82,7 +82,7 @@ controller error [goerr_test.go:171 (func3)]
         repository error (409) [goerr_test.go:159 (func1)]
 ```
 
-## Retrieve code from error
+## Retrieve code from goerr explicitly
 You can also explicitly retrieve the error explicitky from `goerr.Code(err)` method.
 ```
 err := demo()
