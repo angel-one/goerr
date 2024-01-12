@@ -40,7 +40,7 @@ func New(nested error, message ...any) error {
 			msg = fmt.Sprintf(message[1].(string), message[2:]...)
 		} else {
 			msg = fmt.Sprintf(message[0].(string), message[1:]...)
-		}	
+		}
 	}
 
 	stack := make([]uintptr, MaxStackDepth)
@@ -57,12 +57,16 @@ func New(nested error, message ...any) error {
 		message: msg,
 		stack:   stack[:length],
 		frames:  frames,
-		code: code,
+		code:    code,
 	}
 }
 
 func (e *errorEx) Error() string {
 	return e.message
+}
+
+func (e *errorEx) Unwrap() error {
+	return e.err
 }
 
 // A StackFrame contains all necessary information about to generate a line

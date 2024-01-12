@@ -11,6 +11,14 @@ import (
 	"github.com/angel-one/goerr/samplesrc"
 )
 
+type testErrorType struct {
+	err error
+}
+
+func (e *testErrorType) Error() string {
+	return e.err.Error()
+}
+
 func TestBasic(t *testing.T) {
 	err := samplesrc.Repository()
 	if err == nil {
@@ -182,3 +190,43 @@ func TestWithHTTPCodeStack(t *testing.T) {
 
 }
 
+func Test_Unwrap(t *testing.T) {
+	testErr1 := &testErrorType{errors.New("foo err")}
+	testErr2 := &testErrorType{errors.New("bar err")}
+
+	t.Run("Unwrap should return correct underlying error", func(t *testing.T) {
+		err := goerr.New(testErr1, "layer 1 failed")
+
+		if unwrapped := errors.Unwrap(err); unwrapped != testErr1 {
+			t.Fatalf("invalid unwrapped error returned. expected = %+v, got = %+v", testErr1, err)
+		}
+	})
+
+	t.Run("wrapped error should support errors.Is across nestings", func(t *testing.T) {
+		err := goerr.New(testErr1, "layer 1 failed")
+		err = goerr.New(err, "layer 2 failed")
+
+		if !errors.Is(err, testErr1) {
+			t.Fatalf("expected errors.Is(testErr1, err) to return true, returned false")
+		}
+
+		if errors.Is(err, testErr2) {
+			t.Fatalf("expected errors.Is(err, testErr2) to return false, returned true")
+		}
+	})
+
+	t.Run("wrapped error should support errors.As across nestings", func(t *testing.T) {
+		err := goerr.New(testErr1, "layer 1 failed")
+		err = goerr.New(err, "layer 2 failed")
+
+		target := &testErrorType{}
+
+		if !errors.As(err, &target) {
+			t.Fatalf("expected !errors.As(err, &target) to return true, returned false")
+		}
+
+		if target.err != testErr1.err {
+			t.Fatalf("found target.err != testErr1.err")
+		}
+	})
+}
