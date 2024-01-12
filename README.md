@@ -95,6 +95,7 @@ The `Code` method iterates until it fonds the error code in teh stack. It stop i
 - `goerr.Error()` will give the error text of the top most error object
 - `goerr.Stack(err)` will give stack trace of call chain
 - `goerr.Stack(err)` can be called for error type as well, in which case it will just return `Error()`
+- `goerr` supports error checking and handling via the standard `errors.Is` and `errors.As` functions
 
 # Installation
 ```shell
