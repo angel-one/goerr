@@ -202,6 +202,21 @@ func ListStacks(err error) []string {
 	return append(result, ListStacks(e.err)...)
 }
 
+func ListErrors(err error) []string {
+	var result []string
+	e, ok := err.(*errorEx)
+	if !ok {
+		result = append(result, err.Error())
+		return result
+	}
+	result = append(result, e.message)
+	if e.err == nil {
+		return result
+	}
+
+	return append(result, ListErrors(e.err)...)
+}
+
 func Stack(err error) string {
 	if err == nil {
 		return ""
